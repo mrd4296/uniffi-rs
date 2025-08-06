@@ -1,6 +1,7 @@
 private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
 private let UNIFFI_RUST_FUTURE_POLL_WAKE: Int8 = 1
 
+@available(iOS 13.0, *)
 fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
 
 fileprivate func uniffiRustCallAsync<F, T>(
@@ -13,19 +14,24 @@ fileprivate func uniffiRustCallAsync<F, T>(
 ) async throws -> T {
     // Make sure to call the ensure init function since future creation doesn't have a
     // RustCallStatus param, so doesn't use makeRustCall()
-    {{ ensure_init_fn_name }}()
+    uniffiEnsureZmp3rsInitialized()
     let rustFuture = rustFutureFunc()
     defer {
         freeFunc(rustFuture)
     }
     var pollResult: Int8;
     repeat {
-        pollResult = await withUnsafeContinuation {
-            pollFunc(
-                rustFuture,
-                uniffiFutureContinuationCallback,
-                uniffiContinuationHandleMap.insert(obj: $0)
-            )
+        if #available(iOS 13.0, *) {
+            pollResult = await withUnsafeContinuation {
+                pollFunc(
+                    rustFuture,
+                    uniffiFutureContinuationCallback,
+                    uniffiContinuationHandleMap.insert(obj: $0)
+                )
+            }
+        } else {
+            // Fallback on earlier versions
+            throw UniffiInternalError.unexpectedRustCallError
         }
     } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
 
@@ -37,6 +43,7 @@ fileprivate func uniffiRustCallAsync<F, T>(
 
 // Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
 // lift the return value or error and resume the suspended function.
+@available(iOS 13.0, *)
 fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
     if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
         continuation.resume(returning: pollResult)
