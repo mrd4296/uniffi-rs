@@ -21,6 +21,7 @@
 // eg, `public func foo_bar() { body }`
 {%- macro func_decl(func_decl, callable, indent) %}
 {%- call docstring(callable, indent) %}
+{{ availability_async(callable) }}
 {{ func_decl }} {{ callable.name()|fn_name }}(
     {%- call arg_list_decl(callable) -%})
     {%- call is_async(callable) %}
@@ -33,6 +34,7 @@
 // primary ctor - no name, no return-type.
 {%- macro ctor_decl(callable, indent) %}
 {%- call docstring(callable, indent) %}
+{{ availability_async(callable) }}
 public convenience init(
     {%- call arg_list_decl(callable) -%}) {%- call is_async(callable) %} {%- call throws(callable) %} {
     {%- if callable.is_async() %}
@@ -152,6 +154,10 @@ v{{- field_num -}}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro %}
+
+{%- macro availability_async(func) -%}
+{%- if func.is_async() %}@available(iOS 13.0, *) {% endif -%}
+{%- endmacro -%}
 
 {%- macro is_async(func) %}
 {%- if func.is_async() %}async {% endif %}

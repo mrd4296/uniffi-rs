@@ -3,7 +3,7 @@ private let UNIFFI_RUST_FUTURE_POLL_WAKE: Int8 = 1
 
 @available(iOS 13.0, *)
 fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
-
+@available(iOS 13.0.0, *)
 fileprivate func uniffiRustCallAsync<F, T>(
     rustFutureFunc: () -> UInt64,
     pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
